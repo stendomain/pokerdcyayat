@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Poker DC</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap">
+<style>
+:root{--bg:#1d1626;--ink:#f6f0e2;--mute:#a999b8;--felt:#0e4a4c;--felt2:#0a3637;--rail:#4a2b1f;--gold:#f2b84b;--red:#d2453b;--card:#f6f0e2;--line:#3a2d49}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;background:var(--bg);color:var(--ink);font:16px/1.4 'Bricolage Grotesque',system-ui,sans-serif}
+button,input{font:inherit}
+button{cursor:pointer;border:0;border-radius:10px;padding:.7em 1.1em;background:var(--gold);color:#2b1c05;font-weight:700}
+button.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
+button.red{background:var(--red);color:#fff}
+button:disabled{opacity:.4;cursor:default}
+button:focus-visible,input:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+input{background:#120d19;border:1px solid var(--line);color:var(--ink);border-radius:10px;padding:.7em .9em;width:100%}
+.view{display:none;max-width:460px;margin:0 auto;padding:max(24px,env(safe-area-inset-top)) 20px 28px}
+.view.on{display:block}
+h1{font-size:2.6rem;font-weight:800;margin:.6em 0 .1em;letter-spacing:-.03em}
+.sub{color:var(--mute);margin:0 0 1.4em}
+.stack>*+*{margin-top:12px}
+.row{display:flex;gap:10px}
+.tabs{display:flex;gap:8px;margin-bottom:14px}
+.tabs button{flex:1}
+.bank{background:linear-gradient(160deg,#2a1f38,#201830);border:1px solid var(--line);border-radius:16px;padding:18px}
+.bank b{display:block;font-size:2.4rem;font-weight:800;color:var(--gold);line-height:1.1}
+.note{color:var(--mute);font-size:.88rem}
+#toast{position:fixed;left:50%;top:14px;transform:translateX(-50%);background:var(--red);color:#fff;padding:.6em 1em;border-radius:10px;opacity:0;pointer-events:none;transition:opacity .2s;z-index:9;max-width:90vw}
+#toast.on{opacity:1}
+/* meja */
+#table.view{max-width:760px;padding:10px 10px 18px}
+.top{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px}
+.top .code{font-weight:800;font-size:1.3rem;letter-spacing:.08em}
+.top button{padding:.45em .8em;font-size:.9rem}
+.felt{position:relative;height:min(62vh,430px);min-height:340px;margin:6px 0;border-radius:999px/50%;background:radial-gradient(ellipse at 50% 40%,var(--felt),var(--felt2));border:10px solid var(--rail);box-shadow:inset 0 0 40px #0007}
+.mid{position:absolute;left:50%;top:48%;transform:translate(-50%,-50%);text-align:center;width:62%}
+.board{display:flex;gap:5px;justify-content:center;min-height:56px}
+.pot{margin-top:8px;font-weight:800;color:var(--gold);font-size:1.05rem}
+.msg{font-size:.85rem;color:#d7efe9;min-height:1.3em}
+.c{width:36px;height:52px;border-radius:5px;background:var(--card);color:#1a1a1a;display:flex;flex-direction:column;align-items:center;justify-content:center;font-weight:800;font-size:.95rem;line-height:1;box-shadow:0 1px 3px #0006}
+.c.r{color:var(--red)}.c.back{background:repeating-linear-gradient(45deg,#6b3a8f,#6b3a8f 4px,#563076 4px,#563076 8px);border:2px solid var(--card)}
+.c.empty{background:#0003;box-shadow:none;border:1px dashed #fff3}
+.seat{position:absolute;transform:translate(-50%,-50%);width:92px;text-align:center;font-size:.8rem}
+.seat .box{background:#1d1626ee;border:2px solid var(--line);border-radius:12px;padding:4px 4px 5px;position:relative;overflow:hidden}
+.seat.turn .box{border-color:var(--gold)}
+.seat.fold{opacity:.45}.seat.away .nm::after{content:' ⏸'}
+.seat .nm{font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.seat .st{color:var(--gold);font-weight:700}
+.seat .hand{display:flex;gap:2px;justify-content:center;margin-bottom:3px}
+.seat .c{width:30px;height:42px;font-size:.8rem}
+.seat .bet{position:absolute;left:50%;transform:translateX(-50%);bottom:-22px;background:var(--gold);color:#2b1c05;font-weight:800;border-radius:99px;padding:0 8px;font-size:.75rem}
+.seat .d{position:absolute;right:-6px;top:-6px;background:var(--card);color:#222;border-radius:50%;width:18px;height:18px;font-size:.65rem;font-weight:800;line-height:18px}
+.tm{position:absolute;left:0;bottom:0;height:3px;background:var(--gold);width:100%}
+.log{color:var(--mute);font-size:.82rem;min-height:3.6em;margin:22px 0 8px}
+.ctl{display:grid;gap:8px}
+.ctl .row>*{flex:1}
+.ctl .rz{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center}
+.ctl .quick button{padding:.4em;font-size:.85rem}
+@media (prefers-reduced-motion:no-preference){.seat.turn .box{animation:pulse 1.6s ease-in-out infinite}@keyframes pulse{50%{box-shadow:0 0 0 4px #f2b84b33}}}
+</style>
+</head>
+<body>
+<div id="toast" role="alert"></div>
+
+<section id="lobby" class="view on">
+  <h1>Poker DC</h1>
+  <p class="sub">Texas Hold'em bareng temen. Chip virtual, tanpa uang asli.</p>
+  <div class="stack">
+    <input id="nm" placeholder="Nama kamu" maxlength="14" autocomplete="nickname">
+    <input id="code" placeholder="Kode room" maxlength="12" style="text-transform:uppercase">
+    <button id="go" style="width:100%">Masuk meja</button>
+    <p class="note">Kode baru otomatis bikin meja baru. Temen tinggal buka link yang sama atau ketik kode yang sama. Semua mulai dengan jumlah chip yang sama.</p>
+  </div>
+</section>
+
+<section id="table" class="view">
+  <div class="top"><span class="code" id="rc"></span><span><button class="ghost" id="cp">Salin link</button> <button class="ghost" id="lv">Keluar meja</button></span></div>
+  <div class="felt" id="felt"><div class="mid"><div class="board" id="board"></div><div class="pot" id="pot"></div><div class="msg" id="msg"></div></div></div>
+  <div class="log" id="log"></div>
+  <div class="ctl" id="ctl"></div>
+</section>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+const $=id=>document.getElementById(id), socket=io();
+let me=null, st=null, want=new URLSearchParams(location.search).get('room'), mode='login', ctlKey='';
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const show=v=>['lobby','table'].forEach(x=>$(x).classList.toggle('on',x===v));
+const toast=m=>{const t=$('toast');t.textContent=m;t.classList.add('on');clearTimeout(t.h);t.h=setTimeout(()=>t.classList.remove('on'),3200)};
+const fmt=n=>n.toLocaleString('id-ID');
+
+/* --- masuk meja --- */
+const pid=localStorage.pdp||(localStorage.pdp=(crypto.randomUUID?crypto.randomUUID():Math.random().toString(36).slice(2)+Date.now()));
+const rnd=()=>Array.from({length:4},()=>'ABCDEFGHJKMNPQRSTUVWXYZ'[Math.random()*23|0]).join('');
+$('nm').value=localStorage.pdn||'';$('code').value=(want||rnd()).toUpperCase();
+let cur=null;try{cur=JSON.parse(sessionStorage.pdc||'null')}catch(e){}
+const join=(name,code)=>{cur={name,code};sessionStorage.pdc=JSON.stringify(cur);localStorage.pdn=name;socket.emit('join',{pid,name,code})};
+$('go').onclick=()=>join($('nm').value,$('code').value);
+$('nm').onkeydown=$('code').onkeydown=e=>e.key==='Enter'&&$('go').click();
+socket.on('connect',()=>{if(cur)socket.emit('join',{pid,...cur})});
+socket.on('err',m=>{toast(m);if(!st){cur=null;sessionStorage.removeItem('pdc')}});
+socket.on('joined',c=>{history.replaceState(0,'','/?room='+c);show('table')});
+socket.on('left',()=>{st=null;cur=null;sessionStorage.removeItem('pdc');ctlKey='';history.replaceState(0,'','/');show('lobby')});
+$('lv').onclick=()=>{if(confirm('Keluar dari meja?'))socket.emit('leave')};
+$('cp').onclick=()=>{const u=location.origin+'/?room='+st.code;(navigator.clipboard?navigator.clipboard.writeText(u):Promise.reject()).then(()=>toast('Link disalin, kirim ke DC'),()=>prompt('Salin link ini:',u))};
+
+/* --- meja --- */
+const R={11:'J',12:'Q',13:'K',14:'A'}, S=['♠','♥','♦','♣'];
+function card(c,small){if(!c)return'<div class="c back"></div>';return`<div class="c ${c.s===1||c.s===2?'r':''}"><span>${R[c.r]||c.r}</span><span>${S[c.s]}</span></div>`}
+socket.on('state',s=>{st=s;st.t=Date.now()+s.ms;render()});
+
+function render(){
+  const n=st.seats.length, mi=st.seats.findIndex(s=>s.name===st.you), m=st.seats[mi];
+  $('rc').textContent='Room '+st.code;
+  const sumBets=st.seats.reduce((a,s)=>a+s.bet,0);
+  $('board').innerHTML=Array.from({length:5},(_,i)=>st.board[i]?card(st.board[i]):'<div class="c empty"></div>').join('');
+  $('pot').textContent=st.phase==='waiting'?'':'Pot '+fmt(st.pot+sumBets);
+  $('msg').innerHTML=st.phase==='waiting'?'Nunggu pemain, minimal 2':st.phase==='showdown'&&st.result?st.result.map(w=>`${esc(w.name)} menang ${fmt(w.amt)}${w.hand?' ('+w.hand+')':''}`).join('<br>'):'';
+  $('felt').querySelectorAll('.seat').forEach(e=>e.remove());
+  st.seats.forEach((s,i)=>{
+    const a=(90+((i-mi+n)%n)*360/n)*Math.PI/180, x=50+43*Math.cos(a), y=48+44*Math.sin(a);
+    const d=document.createElement('div');
+    d.className='seat'+(st.turn===s.name?' turn':'')+((s.folded&&s.inHand)?' fold':'')+(s.away?' away':'');
+    d.style.left=x+'%';d.style.top=y+'%';
+    d.innerHTML=`<div class="box">${s.name===st.dealer&&st.phase!=='waiting'?'<span class="d">D</span>':''}<div class="hand">${s.cards.map(c=>card(c)).join('')}</div><div class="nm">${esc(s.name)}</div><div class="st">${fmt(s.stack)}${s.allin?' · all-in':''}</div>${st.turn===s.name?'<div class="tm"></div>':''}</div>${s.bet?`<span class="bet">${fmt(s.bet)}</span>`:''}`;
+    $('felt').appendChild(d);
+  });
+  $('log').innerHTML=st.log.slice(-4).map(esc).join('<br>');
+  controls(m);
+}
+setInterval(()=>{const t=document.querySelector('.tm');if(t&&st)t.style.width=Math.max(0,(st.t-Date.now())/300)+'%'},200);
+
+function controls(m){
+  const c=$('ctl'), myTurn=st.turn===st.you, toCall=m?Math.min(st.currentBet-m.bet,m.stack):0, max=m?m.bet+m.stack:0;
+  const key=[st.phase,st.turn,st.currentBet,m&&m.stack,m&&m.bet,st.seats.length,st.result&&1].join('|');
+  if(key===ctlKey)return; ctlKey=key;
+  if(st.phase==='waiting'||st.phase==='showdown'){
+    const can=st.seats.filter(s=>s.stack>0).length>=2;
+    c.innerHTML=(st.phase==='waiting'?`<button id="go" ${can?'':'disabled'}>Mulai main</button>`:'<div class="note">Tangan berikutnya sebentar lagi…</div>')+(m&&m.stack===0&&!(m.inHand&&st.phase!=='showdown')?'<button id="rb" class="ghost">Isi ulang chip</button>':'');
+    if($('go'))$('go').onclick=()=>socket.emit('start');
+    if($('rb'))$('rb').onclick=()=>socket.emit('rebuy');
+    return;
+  }
+  if(!myTurn){c.innerHTML=`<div class="note">${m&&m.folded?'Kamu fold. Nunggu tangan selesai.':st.turn?'Giliran '+esc(st.turn)+'…':''}</div>`;return}
+  const min=Math.min(st.currentBet+st.minRaise,max), canRaise=max>st.currentBet, tot=st.pot+st.seats.reduce((a,s)=>a+s.bet,0);
+  c.innerHTML=`<div class="row"><button class="red" id="f">Fold</button><button id="k">${toCall>0?'Call '+fmt(toCall):'Check'}</button></div>`+(canRaise?
+   `<div class="rz"><input type="range" id="rs" min="${min}" max="${max}" step="1" value="${min}"><input id="rn" type="number" min="${min}" max="${max}" value="${min}" style="width:110px"></div>
+    <div class="row quick"><button class="ghost" id="q1">½ pot</button><button class="ghost" id="q2">Pot</button><button class="ghost" id="q3">All-in</button><button id="rr">Raise</button></div>`:'');
+  $('f').onclick=()=>socket.emit('action',{type:'fold'});
+  $('k').onclick=()=>socket.emit('action',{type:toCall>0?'call':'check'});
+  if(!canRaise)return;
+  const set=v=>{v=Math.max(min,Math.min(max,Math.round(v)));$('rs').value=v;$('rn').value=v};
+  $('rs').oninput=e=>set(+e.target.value);$('rn').onchange=e=>set(+e.target.value);
+  $('q1').onclick=()=>set(st.currentBet+(tot+toCall)/2);$('q2').onclick=()=>set(st.currentBet+tot+toCall);$('q3').onclick=()=>set(max);
+  $('rr').onclick=()=>socket.emit('action',{type:'raise',amount:+$('rn').value});
+}
+</script>
+</body>
+</html>
